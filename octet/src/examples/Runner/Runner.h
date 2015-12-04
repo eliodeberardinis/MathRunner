@@ -34,23 +34,30 @@ namespace octet {
 	GameObject player;
 	std::vector<GameObject> listGameObjects;
 
+	int obstacleDrawDistance;
+	int obstacleGap;
+	int lastDist;
+
   public:
     /// this is called when we construct the class before everything is initialised.
     Runner(int argc, char **argv) : app(argc, argv) {
     }
 	// x = right
 	// y = Up
-	// z = straight
+	// -z = straight
     /// this is called once OpenGL is initialized
     void app_init() {
 	  freeCamera = false;
       app_scene =  new visual_scene();
       app_scene->create_default_camera_and_lights();
 	  app_scene->get_camera_instance(0)->set_far_plane(1000.0f);
-
+	  obstacleDrawDistance = 450;
+	  obstacleGap = 50;
+	  lastDist = obstacleDrawDistance;
 	  listGameObjects = std::vector<GameObject>();
 
 	  material *red = new material(vec4(1, 0, 0, 1));
+	  material *blue = new material(vec4(0, 0, 1, 1));
 	  material *purple = new material(vec4(1, 0, 1, 1));
 
 
@@ -63,9 +70,24 @@ namespace octet {
 	  mat.translate(0, 2, 0);
 	  player = createGameObject(mat, new mesh_box(vec3(1)), purple, true, 10.0f);
 
+	  for (int i = 0; i * obstacleGap < obstacleDrawDistance; i++)
+	  {
+		  createObstacle((i+1) * obstacleGap, new mesh_sphere(vec3(0), 1), blue);
+	  }
+
 
 
     }
+
+	void createObstacle(float distanceFromPlayer, mesh *msh, material *mtl)
+	{
+		float xCoord = rand() % 5 - 2.5f;
+		vec3 relativePos = vec3(xCoord, 0, -distanceFromPlayer);
+		mat4t mat;
+		mat.translate(player.getNode()->get_position());
+		mat.translate(relativePos);
+		listGameObjects.push_back(createGameObject(mat, msh, mtl, true, 99999.0f));
+	}
 
 	GameObject createGameObject(mat4t_in mat, mesh *msh, material *mtl, bool is_dynamic = false, float mass = 1)
 	{
@@ -96,6 +118,7 @@ namespace octet {
 		camera_to_world.rotateX(angle_y);
 	}
 
+
 	void updateCamera()
 	{
 		if (freeCamera)
@@ -117,6 +140,17 @@ namespace octet {
       // update matrices. assume 30 fps.
       app_scene->update(1.0f/30);
 	  updateCamera();
+
+
+	  player.getNode()->translate(vec3(0, 0, -3.0f));
+
+	  if (-player.getNode()->get_position().z() + obstacleDrawDistance > lastDist)
+	  {
+		  createObstacle(-player.getNode()->get_position().z() + obstacleDrawDistance + obstacleGap, new mesh_sphere(vec3(0), 1), new material(vec4(0, 0, 1, 1)));
+		  lastDist = -player.getNode()->get_position().z() + obstacleDrawDistance + obstacleGap;
+	  }
+
+	  std::cout << "Player Position : ("<< player.getNode()->get_position().x() << "," << player.getNode()->get_position().y() << "," << player.getNode()->get_position().z() << ")\n";
 
       // draw the scene
       app_scene->render((float)vx / vy);
