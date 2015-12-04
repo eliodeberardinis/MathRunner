@@ -86,6 +86,7 @@ namespace octet { namespace scene {
       glDisableVertexAttribArray(attribute_pos);
     }
 
+
     void calc_lighting(const mat4t &worldToCamera) {
       vec4 &ambient = light_uniforms[0];
       ambient = vec4(0, 0, 0, 1);
@@ -296,43 +297,88 @@ namespace octet { namespace scene {
       #endif
     }
 
-    /// helper to add a mesh to a scene and also to create the corresponding physics object
-    mesh_instance *add_shape(mat4t_in mat, mesh *msh, material *mtl, bool is_dynamic=false, float mass=1, collison_shape_t *shape=NULL) {
-      scene_node *node = new scene_node(this);
-      node->access_nodeToParent() = mat;
 
-      mesh_instance *result = NULL;
-      if (msh && mtl) {
-        result = new mesh_instance(node, msh, mtl);
-        add_mesh_instance(result);
-      }
+	btDiscreteDynamicsWorld* getWorld()
+	{
+		return world;
+	}
 
-      #ifdef OCTET_BULLET
-        btMatrix3x3 matrix(get_btMatrix3x3(mat));
-        btVector3 pos(get_btVector3(mat[3].xyz()));
 
-        if (shape == NULL) {
-          shape = is_dynamic ? msh->get_bullet_shape() : msh->get_static_bullet_shape();
-        }
+	/// helper to add a mesh to a scene and also to create the corresponding physics object
+	mesh_instance *add_shape(mat4t_in mat, mesh *msh, material *mtl, bool is_dynamic = false, float mass = 1, collison_shape_t *shape = NULL) {
+		scene_node *node = new scene_node(this);
+		node->access_nodeToParent() = mat;
 
-        if (shape) {
-          btTransform transform(matrix, pos);
+		mesh_instance *result = NULL;
+		if (msh && mtl) {
+			result = new mesh_instance(node, msh, mtl);
+			add_mesh_instance(result);
+		}
 
-          btDefaultMotionState *motionState = new btDefaultMotionState(transform);
-          btVector3 inertiaTensor;
+#ifdef OCTET_BULLET
+		btMatrix3x3 matrix(get_btMatrix3x3(mat));
+		btVector3 pos(get_btVector3(mat[3].xyz()));
 
-          if (!is_dynamic) mass = 0;
-   
-          if (is_dynamic) shape->calculateLocalInertia(mass, inertiaTensor);
-    
-          btRigidBody * rigid_body = new btRigidBody(mass, motionState, shape, inertiaTensor);
-          world->addRigidBody(rigid_body);
-          rigid_body->setUserPointer(node);
-          node->set_rigid_body(rigid_body);
-        }
-      #endif
-      return result;
-    }
+		if (shape == NULL) {
+			shape = is_dynamic ? msh->get_bullet_shape() : msh->get_static_bullet_shape();
+		}
+
+		if (shape) {
+			btTransform transform(matrix, pos);
+
+			btDefaultMotionState *motionState = new btDefaultMotionState(transform);
+			btVector3 inertiaTensor;
+
+			if (!is_dynamic) mass = 0;
+
+			if (is_dynamic) shape->calculateLocalInertia(mass, inertiaTensor);
+
+			btRigidBody * rigid_body = new btRigidBody(mass, motionState, shape, inertiaTensor);
+			world->addRigidBody(rigid_body);
+			rigid_body->setUserPointer(node);
+			node->set_rigid_body(rigid_body);
+		}
+#endif
+		return result;
+	}
+
+#ifdef OCTET_BULLET
+	/// helper to add a mesh to a scene and also to create the corresponding physics object
+	mesh_instance *add_shape(mat4t_in mat, mesh *msh, material *mtl, bool is_dynamic = false, float mass = 1, btRigidBody **rigid_body = NULL, scene_node **node= NULL, collison_shape_t *shape = NULL) {
+		*node = new scene_node(this);
+		(*node)->access_nodeToParent() = mat;
+
+		mesh_instance *result = NULL;
+		if (msh && mtl) {
+			result = new mesh_instance(*node, msh, mtl);
+			add_mesh_instance(result);
+		}
+
+		btMatrix3x3 matrix(get_btMatrix3x3(mat));
+		btVector3 pos(get_btVector3(mat[3].xyz()));
+
+		if (shape == NULL) {
+			shape = is_dynamic ? msh->get_bullet_shape() : msh->get_static_bullet_shape();
+		}
+
+		if (shape) {
+			btTransform transform(matrix, pos);
+
+			btDefaultMotionState *motionState = new btDefaultMotionState(transform);
+			btVector3 inertiaTensor;
+
+			if (!is_dynamic) mass = 0;
+
+			if (is_dynamic) shape->calculateLocalInertia(mass, inertiaTensor);
+
+			*rigid_body = new btRigidBody(mass, motionState, shape, inertiaTensor);
+			world->addRigidBody(*rigid_body);
+			(*rigid_body)->setUserPointer(node);
+			(*node)->set_rigid_body(*rigid_body);
+		}
+		return result;
+	}
+#endif
 
     /// Serialization
     void visit(visitor &v) {
