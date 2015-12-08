@@ -4,11 +4,16 @@
 //
 // Modular Framework for OpenGLES2 rendering on multiple platforms.
 //
+
+#include "Julia.h"
 namespace octet {
   /// Scene containing a box with octet.
 	
 
   class Runner : public app {
+
+    Julia_shader julia_shader_;
+
 	class GameObject {
 	public:
 		GameObject() {}
@@ -29,6 +34,7 @@ namespace octet {
 		ref<mesh_instance> _meshInstance;
 	};
     // scene for drawing box
+	
     ref<visual_scene> app_scene;
 	bool freeCamera;
 	GameObject player;
@@ -49,6 +55,9 @@ namespace octet {
 	// -z = straight
     /// this is called once OpenGL is initialized
     void app_init() {
+
+	  julia_shader_.init();
+
 	  freeCamera = false;
       app_scene =  new visual_scene();
       app_scene->create_default_camera_and_lights();
