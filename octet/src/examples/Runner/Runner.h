@@ -36,6 +36,8 @@ namespace octet {
 
 	int obstacleDrawDistance;
 	int obstacleGap;
+	int roadWidth;
+	int playerSize;
 	int lastDist;
 
   public:
@@ -53,6 +55,8 @@ namespace octet {
 	  app_scene->get_camera_instance(0)->set_far_plane(1000.0f);
 	  obstacleDrawDistance = 450;
 	  obstacleGap = 50;
+	  roadWidth = 5;
+	  playerSize = 1;
 	  lastDist = obstacleDrawDistance;
 	  listGameObjects = std::vector<GameObject>();
 
@@ -63,12 +67,12 @@ namespace octet {
 
 	  mat4t mat;
 	  mat.translate(0, -10, 0);
-	  listGameObjects.push_back(createGameObject(mat, new mesh_box(vec3(5, 0.1f, 100000)), red, false, 1.0f));
+	  listGameObjects.push_back(createGameObject(mat, new mesh_box(vec3(roadWidth, 0.1f, 100000)), red, false, 1.0f));
 
 
 
 	  mat.translate(0, 2, 0);
-	  player = createGameObject(mat, new mesh_box(vec3(1)), purple, true, 10.0f);
+	  player = createGameObject(mat, new mesh_box(vec3(playerSize)), purple, true, 10.0f);
 
 	  for (int i = 0; i * obstacleGap < obstacleDrawDistance; i++)
 	  {
@@ -84,7 +88,7 @@ namespace octet {
 		float xCoord = rand() % 5 - 2.5f;
 		vec3 relativePos = vec3(xCoord, 0, -distanceFromPlayer);
 		mat4t mat;
-		mat.translate(player.getNode()->get_position());
+		mat.translate(0, player.getNode()->get_position().y(),player.getNode()->get_position().z());
 		mat.translate(relativePos);
 		listGameObjects.push_back(createGameObject(mat, msh, mtl, true, 99999.0f));
 	}
@@ -131,6 +135,22 @@ namespace octet {
 	}
 
 
+	void handleMovement()
+	{
+		player.getNode()->translate(vec3(0, 0, -3.0f));
+
+		float movement = 0.0f;
+		if (is_key_down(key_left))
+			movement -= 0.5f;
+		if (is_key_down(key_right))
+			movement += 0.5f;
+		float newX = abs(player.getNode()->get_position().x() + movement);
+		if (newX < roadWidth - playerSize)
+		{
+			player.getNode()->translate(vec3(movement, 0, 0));
+		}
+	}
+
     /// this is called to draw the world
     void draw_world(int x, int y, int w, int h) {
       int vx = 0, vy = 0;
@@ -141,8 +161,7 @@ namespace octet {
       app_scene->update(1.0f/30);
 	  updateCamera();
 
-
-	  player.getNode()->translate(vec3(0, 0, -3.0f));
+	  handleMovement();
 
 	  if (-player.getNode()->get_position().z() + obstacleDrawDistance > lastDist)
 	  {
