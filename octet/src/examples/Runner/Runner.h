@@ -38,12 +38,14 @@ namespace octet {
     ref<visual_scene> app_scene;
 	bool freeCamera;
 	GameObject player;
+	GameObject background;
 	std::vector<GameObject> listGameObjects;
 
 	int obstacleDrawDistance;
 	int obstacleGap;
 	int roadWidth;
 	int playerSize;
+	int backgroundDistance;
 	int lastDist;
 
   public:
@@ -64,6 +66,7 @@ namespace octet {
 	  app_scene->get_camera_instance(0)->set_far_plane(1000.0f);
 	  obstacleDrawDistance = 450;
 	  obstacleGap = 50;
+	  backgroundDistance = 500;
 	  roadWidth = 5;
 	  playerSize = 1;
 	  lastDist = obstacleDrawDistance;
@@ -82,6 +85,9 @@ namespace octet {
 
 	  mat.translate(0, 2, 0);
 	  player = createGameObject(mat, new mesh_box(vec3(playerSize)), purple, true, 10.0f);
+
+	  mat.translate(0, 0, -backgroundDistance);
+	  background = createGameObject(mat, new mesh_box(vec3(1000, 1000, 1)), blue, false, 1.0f);
 
 	  for (int i = 0; i * obstacleGap < obstacleDrawDistance; i++)
 	  {
@@ -158,6 +164,9 @@ namespace octet {
 		{
 			player.getNode()->translate(vec3(movement, 0, 0));
 		}
+
+		background.getNode()->translate(-background.getNode()->get_position());
+		background.getNode()->translate(vec3(0, player.getNode()->get_position().y(), player.getNode()->get_position().z() - backgroundDistance));
 	}
 
     /// this is called to draw the world
