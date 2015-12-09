@@ -14,6 +14,10 @@ namespace octet {
 
     Julia_shader julia_shader_;
 
+	struct my_vertex {
+		vec3p pos;
+		vec2p tex;
+	};
 	class GameObject {
 	public:
 		GameObject() {}
@@ -38,7 +42,7 @@ namespace octet {
     ref<visual_scene> app_scene;
 	bool freeCamera;
 	GameObject player;
-	GameObject background;
+	//GameObject background;
 	std::vector<GameObject> listGameObjects;
 
 	int obstacleDrawDistance;
@@ -86,9 +90,7 @@ namespace octet {
 	  mat.translate(0, 2, 0);
 	  player = createGameObject(mat, new mesh_box(vec3(playerSize)), purple, true, 10.0f);
 
-	  mat.translate(0, 0, -backgroundDistance);
-	  background = createGameObject(mat, new mesh_box(vec3(1000, 1000, 1)), blue, false, 1.0f);
-
+	  
 	  for (int i = 0; i * obstacleGap < obstacleDrawDistance; i++)
 	  {
 		  createObstacle((i+1) * obstacleGap, new mesh_sphere(vec3(0), 1), blue);
@@ -97,6 +99,44 @@ namespace octet {
 
 
     }
+
+
+	void createBackground()
+	{
+
+
+		mat4t modelToWorld;
+		modelToWorld.loadIdentity();
+		modelToWorld.translate(vec3(0, player.getNode()->get_position().y(), player.getNode()->get_position().z() - backgroundDistance));
+		modelToWorld.scale(1, 1, 1);
+		mat4t cameraToWorld = mat4t().translate(app_scene->get_camera_instance(0)->get_node()->get_position());
+		mat4t modelToProjection = mat4t::build_projection_matrix(modelToWorld, cameraToWorld);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		julia_shader_.render(modelToProjection, 100, 100);
+
+
+		float vertices[] = {
+			-500, -500, -200,
+			500, -500, -200,
+			-500, 500, -200,
+			500, 500, -200,
+		};
+
+
+		// attribute_pos (=0) is position of each corner
+		// each corner has 3 floats (x, y, z)
+		// there is no gap between the 3 floats and hence the stride is 3*sizeof(float)
+		glVertexAttribPointer(attribute_pos, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)vertices);
+		glEnableVertexAttribArray(attribute_pos);
+
+		// finally, draw the sprite (4 vertices)
+		glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+
+
+	}
 
 	void createObstacle(float distanceFromPlayer, mesh *msh, material *mtl)
 	{
@@ -165,8 +205,8 @@ namespace octet {
 			player.getNode()->translate(vec3(movement, 0, 0));
 		}
 
-		background.getNode()->translate(-background.getNode()->get_position());
-		background.getNode()->translate(vec3(0, player.getNode()->get_position().y(), player.getNode()->get_position().z() - backgroundDistance));
+		//background.getNode()->translate(-background.getNode()->get_position());
+		//background.getNode()->translate(vec3(0, player.getNode()->get_position().y(), player.getNode()->get_position().z() - backgroundDistance));
 	}
 
     /// this is called to draw the world
@@ -187,7 +227,11 @@ namespace octet {
 		  lastDist = -player.getNode()->get_position().z() + obstacleDrawDistance + obstacleGap;
 	  }
 
-	  std::cout << "Player Position : ("<< player.getNode()->get_position().x() << "," << player.getNode()->get_position().y() << "," << player.getNode()->get_position().z() << ")\n";
+	  std::cout << "Player Position : (" << player.getNode()->get_position().x() << "," << player.getNode()->get_position().y() << "," << player.getNode()->get_position().z() << ")\n";
+//	  std::cout << "BG Position : (" << background.getNode()->get_position().x() << "," << background.getNode()->get_position().y() << "," << background.getNode()->get_position().z() << ")\n";
+
+	  createBackground();
+
 
       // draw the scene
       app_scene->render((float)vx / vy);
